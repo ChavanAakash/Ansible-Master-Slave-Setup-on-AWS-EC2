@@ -259,3 +259,80 @@ After completing this practical, you should understand:
 ---
 
 **Result:** Ansible is installed on the Master, the Slave is configured for SSH access, and remote management is verified using Ansible.
+
+## Understanding Ansible Inventory: Group Name vs IP Address
+
+### 1. Using the Inventory Group Name
+
+```bash
+ansible slaves -m ping
+```
+
+**Why does it work?**
+
+The `/etc/ansible/hosts` inventory file contains a group named `slaves` and a managed host named `slave1`.
+
+Example inventory:
+
+```ini
+[slaves]
+slave1 ansible_host=172.31.36.56 ansible_user=ubuntu ansible_ssh_private_key_file=/home/ubuntu/.ssh/ansible_ed25519
+```
+
+- `slaves` is the inventory group.
+- `slave1` is the inventory hostname.
+- `ansible_host` specifies the Slave's actual IP address.
+- `ansible_user` specifies the SSH username.
+- `ansible_ssh_private_key_file` specifies the SSH private key path.
+
+Ansible reads this inventory and connects to the managed node using its configured IP, username, and key.
+
+### 2. Using the Inventory Hostname
+
+```bash
+ansible slave1 -m ping
+```
+
+This command also works because `slave1` is the hostname defined in the inventory.
+
+### 3. Why Can a Direct IP Command Fail?
+
+Incorrect command:
+
+```bash
+ansible -m ping 172.31.36.56
+```
+
+The target must come before the module options in Ansible's command syntax. Also, the IP address must match a host or pattern in the selected inventory.
+
+Correct general syntax:
+
+```bash
+ansible <target> -m ping
+```
+
+### 4. Ping a Direct IP Address
+
+To target an IP without relying on the default inventory, use a one-host inline inventory:
+
+```bash
+ansible all -i "172.31.36.56," -m ping -u ubuntu --private-key ~/.ssh/ansible_ed25519
+```
+
+**Important:** The comma after the IP address is required for a single-host inline inventory.
+
+- `all` selects all hosts in this inline inventory.
+- `-i` specifies the inventory.
+- `-u ubuntu` specifies the SSH user.
+- `--private-key` specifies the SSH private key.
+
+### Summary
+
+| Command | Purpose |
+|---|---|
+| `ansible slaves -m ping` | Ping all hosts in the `slaves` group |
+| `ansible slave1 -m ping` | Ping the host named `slave1` |
+| `ansible all -i "172.31.36.56," -m ping -u ubuntu --private-key ~/.ssh/ansible_ed25519` | Ping a direct IP using inline inventory |
+
+**Note:** If `ansible slaves -m ping` returns `pong`, the Master can communicate with the Slave successfully through Ansible.
+
